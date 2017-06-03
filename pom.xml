@@ -17,7 +17,7 @@
 
         <endeavour-security.version>1.0-SNAPSHOT</endeavour-security.version>
         <endeavour-cache.version>1.0-SNAPSHOT</endeavour-cache.version>
-        <endeavour-config.version>1.07-SNAPSHOT</endeavour-config.version>
+        <endeavour-config.version>1.08-SNAPSHOT</endeavour-config.version>
 
         <commons-lang3.version>3.4</commons-lang3.version>
         <logback-classic.version>1.1.3</logback-classic.version>

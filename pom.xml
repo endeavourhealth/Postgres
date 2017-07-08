@@ -6,7 +6,7 @@
 
     <groupId>org.endeavourhealth.common</groupId>
     <artifactId>postgres</artifactId>
-    <version>1.07-SNAPSHOT</version>
+    <version>1.08-SNAPSHOT</version>
     <packaging>jar</packaging>
 
     <properties>

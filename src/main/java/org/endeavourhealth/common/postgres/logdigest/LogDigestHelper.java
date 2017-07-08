@@ -16,18 +16,6 @@ abstract class LogDigestHelper {
     private static final Logger LOG = LoggerFactory.getLogger(LogDigestHelper.class);
     public static final String SKIP_LOG_DIGEST_MARKER = "SKIP_LOG_DIGEST_MARKER";
 
-    public static void addLogAppender(Appender<ILoggingEvent> appender) {
-
-        LoggerContext lc = (LoggerContext) LoggerFactory.getILoggerFactory();
-
-        appender.setContext(lc);
-        appender.setName(appender.getClass().getCanonicalName());
-        appender.start();
-
-        ch.qos.logback.classic.Logger logger = (ch.qos.logback.classic.Logger) LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME);
-        logger.addAppender(appender);
-    }
-
     public static void saveDigestToDB(ILoggingEvent eventObject, IDBDigestLogger dbLogger) {
         if (eventObject == null)
             return;

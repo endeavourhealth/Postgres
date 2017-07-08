@@ -12,28 +12,25 @@ public class LogDigestAsyncAppender extends AsyncAppenderBase<ILoggingEvent> imp
     private IDBDigestLogger dbLogger;
 
     public static void addLogAppender(IDBDigestLogger digestLogger) {
-        LogDigestAsyncAppender logDigestAsyncAppender = new LogDigestAsyncAppender(digestLogger);
-        logDigestAsyncAppender.addAppender(logDigestAsyncAppender);
 
-        LoggerContext lc = (LoggerContext) LoggerFactory.getILoggerFactory();
+        LoggerContext context = (LoggerContext)LoggerFactory.getILoggerFactory();
 
-        logDigestAsyncAppender.setContext(lc);
-        logDigestAsyncAppender.setName(LogDigestAsyncAppender.class.getCanonicalName());
-        logDigestAsyncAppender.start();
+        LogDigestAsyncAppender asyncAppender = new LogDigestAsyncAppender();
+
+        // create the actual appender
+        LogDigestAppender appender = new LogDigestAppender(digestLogger);
+        asyncAppender.addAppender(appender);
+
+        asyncAppender.setContext(context);
+        asyncAppender.setName(LogDigestAsyncAppender.class.getCanonicalName());
+        asyncAppender.start();
 
         ch.qos.logback.classic.Logger logger = (ch.qos.logback.classic.Logger) LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME);
-        logger.addAppender(logDigestAsyncAppender);
+        logger.addAppender(asyncAppender);
 
     }
 
-    public LogDigestAsyncAppender(IDBDigestLogger dbLogger) {
+    public LogDigestAsyncAppender() {
         super();
-
-        this.dbLogger = dbLogger;
-    }
-
-    @Override
-    protected void append(ILoggingEvent eventObject) {
-        LogDigestHelper.saveDigestToDB(eventObject, dbLogger);
     }
 }

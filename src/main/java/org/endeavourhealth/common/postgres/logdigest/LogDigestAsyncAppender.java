@@ -17,8 +17,6 @@ public class LogDigestAsyncAppender extends AsyncAppenderBase<ILoggingEvent> {
 
     @Override
     protected void append(ILoggingEvent eventObject) {
-        super.append(eventObject);
-
         LogDigestHelper.saveDigestToDB(eventObject, dbLogger);
     }
 }

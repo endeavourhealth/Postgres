@@ -35,8 +35,9 @@ abstract class LogDigestHelper {
         if (eventObject.getLevel() != Level.ERROR)
             return;
 
-        if (eventObject.getMarker().contains(SKIP_LOG_DIGEST_MARKER))
-            return;
+        if (eventObject.getMarker() != null)
+            if (eventObject.getMarker().contains(SKIP_LOG_DIGEST_MARKER))
+                return;
 
         try {
             String logClass = LogDigestHelper.getLogClass(eventObject);

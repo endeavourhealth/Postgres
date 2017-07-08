@@ -8,8 +8,13 @@ import ch.qos.logback.core.Appender;
 import org.endeavourhealth.common.postgres.PgStoredProcException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.Marker;
+import org.slf4j.MarkerFactory;
 
 abstract class LogDigestHelper {
+
+    private static final Logger LOG = LoggerFactory.getLogger(LogDigestHelper.class);
+    public static final String SKIP_LOG_DIGEST_MARKER = "SKIP_LOG_DIGEST_MARKER";
 
     public static void addLogAppender(Appender<ILoggingEvent> appender) {
 
@@ -30,6 +35,9 @@ abstract class LogDigestHelper {
         if (eventObject.getLevel() != Level.ERROR)
             return;
 
+        if (eventObject.getMarker().contains(SKIP_LOG_DIGEST_MARKER))
+            return;
+
         try {
             String logClass = LogDigestHelper.getLogClass(eventObject);
             String logMethod = LogDigestHelper.getLogMethod(eventObject);
@@ -37,9 +45,11 @@ abstract class LogDigestHelper {
             String exception = LogDigestHelper.getException(eventObject);
 
             dbLogger.logErrorDigest(logClass, logMethod, logMessage, exception);
+
         } catch (PgStoredProcException e) {
-            System.err.println("Error during logging error digest");
-            System.err.println(e);
+
+            Marker marker = MarkerFactory.getMarker(SKIP_LOG_DIGEST_MARKER);
+            LOG.error(marker, "Error during logging error digest", e);
         }
     }
 

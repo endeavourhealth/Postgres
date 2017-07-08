@@ -1,6 +1,5 @@
 package org.endeavourhealth.common.postgres.logdigest;
 
-import ch.qos.logback.classic.LoggerContext;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.Appender;
 import ch.qos.logback.core.AsyncAppenderBase;
@@ -13,21 +12,18 @@ public class LogDigestAsyncAppender extends AsyncAppenderBase<ILoggingEvent> imp
 
     public static void addLogAppender(IDBDigestLogger digestLogger) {
 
-        LoggerContext context = (LoggerContext)LoggerFactory.getILoggerFactory();
-
-        LogDigestAsyncAppender asyncAppender = new LogDigestAsyncAppender();
-
-        // create the actual appender
+        // create the sync appender
         LogDigestAppender appender = new LogDigestAppender(digestLogger);
+        LogDigestHelper.configureAndStartAppender(appender);
+
+        // create the async appender
+        LogDigestAsyncAppender asyncAppender = new LogDigestAsyncAppender();
         asyncAppender.addAppender(appender);
+        LogDigestHelper.configureAndStartAppender(asyncAppender);
 
-        asyncAppender.setContext(context);
-        asyncAppender.setName(LogDigestAsyncAppender.class.getCanonicalName());
-        asyncAppender.start();
-
+        // add to the logger
         ch.qos.logback.classic.Logger logger = (ch.qos.logback.classic.Logger) LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME);
         logger.addAppender(asyncAppender);
-
     }
 
     public LogDigestAsyncAppender() {

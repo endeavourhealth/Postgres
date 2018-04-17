@@ -12,13 +12,13 @@ public class PgAppLock implements AutoCloseable {
     private String appName;
     private Connection connection;
 
-    public PgAppLock(String appName, DataSource nonPooledDataSource) throws PgAppLockException {
+    public PgAppLock(String appName, Connection connection) throws PgAppLockException {
         Validate.notNull(appName);
 
         this.appName = "PgAppLock-" + appName;
 
         try {
-            this.connection = nonPooledDataSource.getConnection();
+            this.connection = connection;
         } catch (Exception e) {
             throw new PgAppLockException("Error obtaining database connection", e);
         }
@@ -63,8 +63,19 @@ public class PgAppLock implements AutoCloseable {
 
                 statement.execute();
             }
+
+            this.connection.close();
+
         } catch (Exception e) {
             throw new PgAppLockException("Error while releasing lock for application '" + appName + "'", e);
         }
+    }
+
+    public Connection getConnection() {
+        return connection;
+    }
+
+    public String getAppName() {
+        return appName;
     }
 }

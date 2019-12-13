@@ -2,7 +2,6 @@ package org.endeavourhealth.common.postgres.PgAppLock;
 
 import org.apache.commons.lang3.Validate;
 
-import javax.sql.DataSource;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;

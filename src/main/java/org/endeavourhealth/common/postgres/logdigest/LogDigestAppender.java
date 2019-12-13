@@ -62,7 +62,7 @@ public class LogDigestAppender extends AppenderBase<ILoggingEvent> {
 
             dbLogger.logErrorDigest(logClass, logMethod, logMessage, exception);
 
-        } catch (PgStoredProcException e) {
+        } catch (Exception e) {
 
             Marker marker = MarkerFactory.getMarker(SKIP_LOG_DIGEST_MARKER);
             LOG.error(marker, "Error during logging error digest", e);

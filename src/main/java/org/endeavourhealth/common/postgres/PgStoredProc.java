@@ -15,26 +15,26 @@ import java.util.List;
 import java.util.Map;
 
 public class PgStoredProc {
+
     public interface IResultSetPopulator<T> {
         T populate(ResultSet resultSet) throws SQLException;
     }
 
-    private DataSource dataSource;
+    private Connection connection;
     private String storedProcedureName;
     private Map<String, Object> parameters;
     private Map<String, Object> outParameters;
-    private Connection multiConnection;
     private Statement multiStatement;
     private ResultSet multiResultSet;
 
-    public PgStoredProc(DataSource dataSource) {
-        if (dataSource == null)
-            throw new IllegalArgumentException("dataSource is null");
+    public PgStoredProc(Connection connection) {
+        if (connection == null)
+            throw new IllegalArgumentException("connection is null");
 
-        this.dataSource = dataSource;
+        this.connection = connection;
         this.parameters = new HashMap<>();
         this.outParameters = new HashMap<>();
-        this.multiConnection = null;
+        //this.multiConnection = null;
         this.multiStatement = null;
         this.multiResultSet = null;
     }
@@ -59,7 +59,7 @@ public class PgStoredProc {
         return this;
     }
 
-    public void execute() throws PgStoredProcException {
+    public void execute() throws Exception {
         List<HashMap<String, Object>> outParameters = executeQuery((resultSet) -> {
             HashMap<String, Object> hashMap = new HashMap<>();
 
@@ -76,7 +76,7 @@ public class PgStoredProc {
         return this.outParameters.get(name);
     }
 
-    public <T extends Object> T executeSingleOrEmptyRow(IResultSetPopulator<T> rowMapper) throws PgStoredProcException {
+    public <T extends Object> T executeSingleOrEmptyRow(IResultSetPopulator<T> rowMapper) throws Exception {
         List<T> resultList = executeQuery(rowMapper);
 
         if (resultList == null)
@@ -91,7 +91,7 @@ public class PgStoredProc {
         return resultList.get(0);
     }
 
-    public <T extends Object> T executeSingleRow(IResultSetPopulator<T> rowMapper) throws PgStoredProcException {
+    public <T extends Object> T executeSingleRow(IResultSetPopulator<T> rowMapper) throws Exception {
         List<T> resultList = executeQuery(rowMapper);
 
         if (resultList == null)
@@ -106,17 +106,18 @@ public class PgStoredProc {
         return resultList.get(0);
     }
 
-    public <T extends Object> List<T> executeQuery(IResultSetPopulator<T> rowMapper) throws PgStoredProcException {
+    public <T extends Object> List<T> executeQuery(IResultSetPopulator<T> rowMapper) throws Exception {
         try {
-            try (Connection connection = this.dataSource.getConnection()) {
-                try (Statement statement = connection.createStatement()) {
-                    try (ResultSet resultSet = statement.executeQuery(getFormattedQuery())) {
-                        return populatePojo(resultSet, rowMapper);
-                    }
+            try (Statement statement = connection.createStatement()) {
+                try (ResultSet resultSet = statement.executeQuery(getFormattedQuery())) {
+                    return populatePojo(resultSet, rowMapper);
                 }
             }
         } catch (Exception e) {
             throw new PgStoredProcException("executeQuery error, see inner exception", e);
+
+        } finally {
+            connection.close();
         }
     }
 
@@ -165,19 +166,23 @@ public class PgStoredProc {
     public <T extends Object> List<T> executeMultiQuery(IResultSetPopulator<T> firstRowMapper) throws PgStoredProcException {
         try {
             if (multiResultSet == null) {
-                this.multiConnection = this.dataSource.getConnection();
-                this.multiConnection.setAutoCommit(false);
-                this.multiStatement = this.multiConnection.createStatement();
+                //this.multiConnection = this.dataSource.getConnection();
+                this.connection.setAutoCommit(false); //need to turn this off for the multi-result set stuff to work
+                this.multiStatement = this.connection.createStatement();
                 this.multiResultSet = this.multiStatement.executeQuery(getFormattedQuery());
 
                 if (!this.multiResultSet.next())
                     throw new PgStoredProcException("No resultsets found");
             }
 
-            List<T> result = populatePojoFromMultiResultSet(firstRowMapper);
+            List<T> result = null;
+            try (ResultSet resultSet = (ResultSet)this.multiResultSet.getObject(1)) {
+                result = populatePojo(resultSet, firstRowMapper);
+            }
 
+            //if hte last result set, close everything down
             if (!this.multiResultSet.next()) {
-                this.multiConnection.commit();
+                this.connection.commit();
                 closeMultiResources();
             }
 
@@ -198,11 +203,6 @@ public class PgStoredProc {
         return results;
     }
 
-    private <T extends Object> List<T> populatePojoFromMultiResultSet(IResultSetPopulator<T> rowMapper) throws SQLException {
-        try (ResultSet resultSet = (ResultSet)this.multiResultSet.getObject(1)) {
-            return populatePojo(resultSet, rowMapper);
-        }
-    }
 
     private String getFormattedQuery() {
         if (StringUtils.isEmpty(storedProcedureName))
@@ -255,16 +255,20 @@ public class PgStoredProc {
     }
 
     private void closeMultiResources() throws SQLException {
-        if (this.multiResultSet != null)
-            if (!this.multiResultSet.isClosed())
-                this.multiResultSet.close();
+        if (this.multiResultSet != null
+                && !this.multiResultSet.isClosed()) {
+            this.multiResultSet.close();
+        }
 
-        if (this.multiStatement != null)
-            if (!this.multiStatement.isClosed())
-                this.multiStatement.close();
+        if (this.multiStatement != null
+                && !this.multiStatement.isClosed()) {
+            this.multiStatement.close();
+        }
 
-        if (this.multiConnection != null)
+        this.connection.close();
+
+        /*if (this.multiConnection != null)
             if (!this.multiConnection.isClosed())
-                this.multiConnection.close();
+                this.multiConnection.close();*/
     }
 }
